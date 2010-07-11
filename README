@@ -1,0 +1,9 @@
+A simple battery monitor program written in Ruby.
+
+Sits there on the system tray and currently only polls acpi when you hover over it.
+
+Has some improvments to be added, but works at the moment.
+
+Usage:
+
+ruby batterymon.rb
