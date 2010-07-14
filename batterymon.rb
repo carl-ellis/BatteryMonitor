@@ -25,7 +25,6 @@ Battery monitor I hope. Should show the percentage of battery in the tooltip.
 
 TODO:
 
-Have acpi periodically checked.
 Update icon on charge
 Display warning on <10%
 Make it configurable
@@ -49,56 +48,42 @@ def percentage
 	return perc
 end
 
-# Creates the gtk object
-def maketray
 # Icon
 ###############
-	trayicon = Gtk::StatusIcon.new
+trayicon = Gtk::StatusIcon.new
 # Use a stock image, the disconnect one is pretty battery-like
-	trayicon.stock = Gtk::Stock::DISCONNECT
+trayicon.stock = Gtk::Stock::DISCONNECT
 # Tooltip
-	trayicon.tooltip = "Battery: #{percentage}"
+trayicon.tooltip = "Battery: #{percentage}"
 
 # Menu
 ###############
 # Quit icon
-	quit = Gtk::ImageMenuItem.new(Gtk::Stock::QUIT)
-	quit.signal_connect('activate'){
-		thread.kill
-		Gtk.main_quit
-	}
+quit = Gtk::ImageMenuItem.new(Gtk::Stock::QUIT)
+quit.signal_connect('activate'){
+	thread.kill
+	Gtk.main_quit
+}
 # Build
-	menu = Gtk::Menu.new
-	menu.append(quit)
-	menu.show_all
+menu = Gtk::Menu.new
+menu.append(quit)
+menu.show_all
 
 # Events and signals
 ###############
-	trayicon.signal_connect('popup-menu'){  |tray, button, time|
-		menu.popup(nil, nil, button, time)
-	}
+trayicon.signal_connect('popup-menu'){  |tray, button, time|
+	menu.popup(nil, nil, button, time)
+}
 
 # Thread for updating tooltip
 ###############
-	thread = Thread.new(TIME_DELAY, trayicon) { |time, tray|
-		while(true)
-			sleep(time)	
-			tray.tooltip = "Battery: #{percentage}"
-		end
-	}
+thread = Thread.new(TIME_DELAY, trayicon) { |time, tray|
+	while(true)
+		sleep(time)	
+		tray.tooltip = "Battery: #{percentage}"
+	end
+}
 
 # Main loop
 ###############
-	Gtk.main
-end
-
-# Forking to background 
-###############
-
-process = Process.fork {
-	maketray()
-}
-
-Process.detach(process)
-
-puts "[1] #{process}"
+Gtk.main
