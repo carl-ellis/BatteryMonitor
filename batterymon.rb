@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # encoding: UTF-8
 
 =begin
@@ -34,51 +34,71 @@ Make it configurable
 
 require 'gtk2'
 
+# Variables
+##############
+
+thread = nil
+TIME_DELAY = 60
+
+# Methods
+##############
+
+# Grabs the precentage from acpi output
 def percentage
 	perc = %x[acpi].split(", ")[1]
 	return perc
 end
 
+# Creates the gtk object
+def maketray
 # Icon
 ###############
-trayicon = Gtk::StatusIcon.new
+	trayicon = Gtk::StatusIcon.new
 # Use a stock image, the disconnect one is pretty battery-like
-trayicon.stock = Gtk::Stock::DISCONNECT
+	trayicon.stock = Gtk::Stock::DISCONNECT
 # Tooltip
-trayicon.tooltip = "Battery: #{percentage}"
+	trayicon.tooltip = "Battery: #{percentage}"
 
 # Menu
 ###############
 # Quit icon
-quit = Gtk::ImageMenuItem.new(Gtk::Stock::QUIT)
-quit.signal_connect('activate'){Gtk.main_quit}
+	quit = Gtk::ImageMenuItem.new(Gtk::Stock::QUIT)
+	quit.signal_connect('activate'){
+		thread.kill
+		Gtk.main_quit
+	}
 # Build
-menu = Gtk::Menu.new
-menu.append(quit)
-menu.show_all
+	menu = Gtk::Menu.new
+	menu.append(quit)
+	menu.show_all
 
 # Events and signals
 ###############
-trayicon.signal_connect('popup-menu'){  |tray, button, time|
-	menu.popup(nil, nil, button, time)
-}
-=begin
-TODO Get a nice WICD style message popping up
-trayicon.signal_connect('activate'){
-	message = Gtk::MessageDialog.new(nil,
-																	Gtk::Dialog::DESTROY_WITH_PARENT,
-																	Gtk::MessageDialog::INFO,
-																	Gtk::MessageDialog::BUTTONS_NONE,
-																	"Battery: #{percentage}"
-															)
-	message.action-area-border = 0
-	message.button-spacing = 0
-	message.content-area-border = 0
-	message.run
-	message.destroy
-}
-=end
+	trayicon.signal_connect('popup-menu'){  |tray, button, time|
+		menu.popup(nil, nil, button, time)
+	}
+
+# Thread for updating tooltip
+###############
+	thread = Thread.new(TIME_DELAY, trayicon) { |time, tray|
+		while(true)
+			sleep(time)	
+			tray.tooltip = "Battery: #{percentage}"
+		end
+	}
 
 # Main loop
 ###############
-Gtk.main
+	Gtk.main
+end
+
+# Forking to background 
+###############
+
+process = Process.fork {
+	maketray()
+}
+
+Process.detach(process)
+
+puts "[1] #{process}"
