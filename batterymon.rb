@@ -33,20 +33,54 @@ Make it configurable
 
 require 'gtk2'
 
+# Classes
+##############
+
+# Describes a battery class
+class Battery
+
+	CHARGING = 1
+	DISCHARGING = 0
+
+	attr_accessor :id, :dc, :percent, :time
+
+	# Default constructor
+	def initialize
+		update()
+	end
+
+	# Grabs the battery status from acpi output
+	def update
+		output = %x[acpi].split(", ")
+
+		# Battery id
+		fsec = output[0]
+		@id = fsec.match(/^.*\s([0-9]+).*$/)[1]
+
+		# Battery state
+		dcraw = fsec.match(/^.*:\s(.*)$/)[1]
+		@dc = (dcraw == "Charging") ? Battery::CHARGING : Battery::DISCHARGING
+
+		# Percent
+		@percent = output[1]
+
+		# Time Remaining
+		@time = output[2].strip
+	end
+
+	# String output
+	def to_s
+		return "Battery - id: #{@id}, dc:#{@dc}, percent:#{@percent}, time:#{@time}"
+	end
+
+end
+
 # Variables
 ##############
 
 thread = nil
-TIME_DELAY = 60
-
-# Methods
-##############
-
-# Grabs the precentage from acpi output
-def percentage
-	perc = %x[acpi].split(", ")[1]
-	return perc
-end
+TIME_DELAY = 10
+battery = Battery.new
 
 # Icon
 ###############
@@ -54,7 +88,7 @@ trayicon = Gtk::StatusIcon.new
 # Use a stock image, the disconnect one is pretty battery-like
 trayicon.stock = Gtk::Stock::DISCONNECT
 # Tooltip
-trayicon.tooltip = "Battery: #{percentage}"
+trayicon.tooltip = "Battery: #{battery.percent}"
 
 # Menu
 ###############
@@ -77,10 +111,15 @@ trayicon.signal_connect('popup-menu'){  |tray, button, time|
 
 # Thread for updating tooltip
 ###############
-thread = Thread.new(TIME_DELAY, trayicon) { |time, tray|
+thread = Thread.new(TIME_DELAY, trayicon, battery) { |time, tray, bat|
 	while(true)
-		sleep(time)	
-		tray.tooltip = "Battery: #{percentage}"
+		# Only update every given time chunk
+		sleep(time)
+		bat.update()
+
+		# Change icon accordingly
+    tray.stock = (bat.dc == Battery::CHARGING) ? Gtk::Stock::CONNECT : Gtk::Stock::DISCONNECT
+		tray.tooltip = "Battery #{bat.id}: #{bat.percent}\n#{bat.time}"
 	end
 }
 

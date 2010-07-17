@@ -1,8 +1,8 @@
 # Maintainer: Carl Ellis <carl.ellis@comp.lancs.ac.uk>
 pkgname=rbatmon-git
-pkgver=20100715
+pkgver=20100717
 pkgrel=1
-pkgdesc="A lightweight battery monitor written in Ruby/Gtk2. Will sit in the system tray and poll ACPI every minute and update the tooltip."
+pkgdesc="A lightweight battery monitor written in Ruby/Gtk2. Will sit in the system tray, poll ACPI and update the tooltip."
 arch=(any)
 url="http://jimhi.com/content/projects/rbatmon/"
 license=('GPL3')
