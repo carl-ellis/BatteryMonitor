@@ -51,21 +51,27 @@ class Battery
 
 	# Grabs the battery status from acpi output
 	def update
-		output = %x[acpi].split(", ")
+		
+		begin
 
-		# Battery id
-		fsec = output[0]
-		@id = fsec.match(/^.*\s([0-9]+).*$/)[1]
+			output = %x[acpi].split(", ")
 
-		# Battery state
-		dcraw = fsec.match(/^.*:\s(.*)$/)[1]
-		@dc = (dcraw == "Charging") ? Battery::CHARGING : Battery::DISCHARGING
+			# Battery id
+			fsec = output[0]
+			@id = fsec.match(/^.*\s([0-9]+).*$/)[1]
 
-		# Percent
-		@percent = output[1]
+			# Battery state
+			dcraw = fsec.match(/^.*:\s(.*)$/)[1]
+			@dc = (dcraw == "Charging") ? Battery::CHARGING : Battery::DISCHARGING
 
-		# Time Remaining
-		@time = output[2].strip
+			# Percent
+			@percent = output[1]
+
+			# Time Remaining
+			@time = (output[2].nil?)? "" : output[2].strip
+		rescue Exception => e
+			#puts e
+		end
 	end
 
 	# String output
