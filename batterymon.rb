@@ -25,7 +25,6 @@ Battery monitor I hope. Should show the percentage of battery in the tooltip.
 
 TODO:
 
-Update icon on charge
 Display warning on <10%
 Make it configurable
 
@@ -62,13 +61,14 @@ class Battery
 
 			# Battery state
 			dcraw = fsec.match(/^.*:\s(.*)$/)[1]
-			@dc = (dcraw == "Charging") ? Battery::CHARGING : Battery::DISCHARGING
+			# If full sets to charging state for the correct icon
+			@dc = (dcraw == "Charging") ? Battery::CHARGING : (output[2].nil?)? Battery::CHARGING : Battery::DISCHARGING
 
 			# Percent
 			@percent = output[1]
 
 			# Time Remaining
-			@time = (output[2].nil?)? "" : output[2].strip
+			@time = (output[2].nil?)? "Full" : output[2].strip
 		rescue Exception => e
 			#puts e
 		end
