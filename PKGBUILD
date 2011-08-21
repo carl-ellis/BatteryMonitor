@@ -1,12 +1,12 @@
 # Maintainer: Carl Ellis <carl.ellis@comp.lancs.ac.uk>
 pkgname=rbatmon-git
-pkgver=20101117
+pkgver=20110821
 pkgrel=1
 pkgdesc="A lightweight battery monitor written in Ruby/Gtk2. Will sit in the system tray, poll ACPI and update the tooltip."
 arch=(any)
 url="http://jimhi.com/content/projects/rbatmon/"
 license=('GPL3')
-depends=('ruby' 'ruby-gnome2' 'gtk2' 'ruby-pango')
+depends=('acpi' 'ruby' 'ruby-gnome2' 'gtk2' 'ruby-pango')
 makedepends=('git')
 optdepends=()
 provides=(rbatmon)
