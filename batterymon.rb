@@ -3,7 +3,7 @@
 
 =begin
 
-Copyright 2010 Carl Ellis
+Copyright 2012 Carl Ellis
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 =begin
 
-Battery monitor I hope. Should show the percentage of battery in the tooltip.
+Battery monitor. Shows the percentage of battery charge in the tooltip.
 
 TODO:
 
@@ -41,10 +41,13 @@ class Battery
 	CHARGING = 1
 	DISCHARGING = 0
 
-	attr_accessor :id, :dc, :percent, :time
+	attr_accessor :id, :dc, :percent, :time, :history, :av_charge, :prev_p, :lpercent, :i
 
 	# Default constructor
 	def initialize
+		@history = []
+		@av_charge = 0
+		@prev_p = nil
 		update()
 	end
 
@@ -65,18 +68,72 @@ class Battery
 			@dc = (dcraw == "Charging") ? Battery::CHARGING : (output[2].nil?)? Battery::CHARGING : Battery::DISCHARGING
 
 			# Percent
+			@lpercent = (@percent.nil?) ? output[1] : @percent
 			@percent = output[1]
 
 			# Time Remaining
 			@time = (output[2].nil?)? "Full" : output[2].strip
+			@time = (@time.include?("will never fully charge")) ? "Calculating..." : @time
+
+			# If chargin add to history and do own charging estimate as ACPI isnt great at it
+			if (@dc == Battery::CHARGING)
+
+				# Wait until a charge state change has been completely observed
+				if (@prev_p.nil?)
+					# If a state change is observed, start the counting
+					if (@lpercent.to_i < @percent.to_i)
+						@prev_p = @percent
+						@i = 0
+					end
+				else
+					# Observed state change while counting, record charge rate
+					if(@prev_p.to_i < @percent.to_i)
+						#puts "Prev:#{@prev_p} Current:#{@percent}, eq:#{@prev_p < @percent}"
+						@prev_p = @percent
+						@history << @i * TIME_DELAY # will be a maximum size of 99
+						@i = 0
+					else
+						@i += 1
+					end
+				end
+
+				# Get the average charge per second
+				@av_charge = 0
+				@history.collect {|c| @av_charge += c}
+				@av_charge /= @history.length.to_f
+
+				# Make sure there is a measurable change
+				if !@av_charge.nan?
+					@av_charge = av_charge
+
+					# Calculate time to full chage (ROUGH)
+					c_togo = 100-@percent.to_i.to_f
+					secs = c_togo*@av_charge
+					@time = to_time(secs - (@i*TIME_DELAY))
+				end
+			else
+				@history = []
+				@prev_p = nil
+			end
+
 		rescue Exception => e
 			#puts e
 		end
 	end
 
+	# Converts seconds into time
+	def to_time(secs)
+		hours = (secs/60/60).to_i
+		secs -= hours*60*60
+		mins = (secs/60).to_i
+		secs -= mins*60
+		secs = secs.to_i
+		return "#{hours.to_s}:#{mins.to_s.rjust(2,"0")}:#{secs.to_s.rjust(2,"0")}"
+	end
+
 	# String output
 	def to_s
-		return "Battery - id: #{@id}, dc:#{@dc}, percent:#{@percent}, time:#{@time}"
+		return "Battery - id: #{@id}, dc:#{@dc}, percent:#{@percent}, time:#{@time} av_c:#{@av_charge} #{@history.to_s}"
 	end
 
 end
